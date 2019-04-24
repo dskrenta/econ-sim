@@ -1,0 +1,32 @@
+function rand(
+  min = 0,
+  max = 1,
+  int = true
+) {
+  if (int) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+  }
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function gdp(
+  consumerSpending,
+  investorSpending,
+  governmentSpending,
+  exports,
+  imports
+) {
+  const gdp = consumerSpending + investorSpending + governmentSpending + (exports - imports);
+  return gdp;
+}
+
+// console.log(gdp(100, 10000, 10000, 100, 10));
+
+Lognormal Distribution normal mean = 0, normal standard deviation = 1
+------------------
+10th | 0.277606
+25th | 0.509416
+50th | 1
+75th | 1.96303
+90th | 3.60222
