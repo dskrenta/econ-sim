@@ -269,7 +269,7 @@ function costOfMaterials() {
   // complexity, rarity
 }
 
-function decesion() {
+function decision() {
   // needs, MPC -> misc vs investing vs needs, 
 }
 
