@@ -3,12 +3,14 @@
 const { inspect } = require('util');
 const Prob = require('prob.js');
 const faker = require('faker');
+const crypto = require('crypto');
 
 // Constants
 const INITIAL_POPULATION_SIZE = 100; 
 const DEFAULT_WEALTH_FACTOR = 25000;
 const DAYS_OF_EXECUTION = 365;
 const MARGINAL_PROPENSITY_TO_COMSUME = 0.6;
+const DEFAULT_NUM_SHARES = 1000000;
 
 const logNormal = Prob.lognormal(0, 1);
 
@@ -26,116 +28,61 @@ const government = {
   importTax: 0.01
 };
 
-const corporations = [
-  {
+const companies = {
+  [genId()]: {
     name: 'Consume Co',
     type: 'food'
   },
-  {
-    name: 'Bucks Bank',
+  [genId()]: {
+    name: 'Buckys Bank',
     type: 'bank'
   },
-  {
+  [genId()]: {
+    name: 'Copper Real Estate',
+    type: 'home'
+  },
+  [genId()]: {
     name: 'Franks Utilities',
     type: 'util'
   },
-  {
-    name: 'Joan\'s Real Estate',
-    type: 'home'
-  },
-  {
+  [genId()]: {
     name: 'Induldge Services',
     type: 'misc'
-  },
-  {
-    name: 'Steady Services',
-    type: 'government'
   }
-];
+};
 
-const people = [];
+const people = {};
+
+// Init companies
+for (let id in companies) {
+  const marketCap = rand(1000000, 10000000);
+
+  companies[id] = {
+    ...companies[id],
+    marketCap,
+    employees: [],
+    sharesOwned: 0,
+    totalShares: DEFAULT_NUM_SHARES,
+    historicalSharePrices: [],
+    shareholders: [],
+    sharePrice: marketCap / DEFAULT_NUM_SHARES,
+  }
+}
 
 // Init people
+const initialCompanyIds = Object.keys(companies);
+
 for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
   const logNormalVal = logNormal();
 
-  const initialAssets = {};
+  const personId = genId();
 
-  buildPercentiles({
-    logNormalVal,
-    ten: () => {
-      initialAssets.food = {
-        units: rand(1, 25)
-      };
-
-      initialAssets.job = {
-        salary: rand(5000, 15000)
-      };
+  people[personId] = {
+    status: {
+      alive: true,
+      solvent: true,
+      hungerFactor: 0
     },
-    twentyfifth: () => {
-      initialAssets.food = {
-        units: rand(10, 50)
-      };
-
-      initialAssets.job = {
-        salary: rand(15000, 25000)
-      };
-    },
-    fifty: () => {
-      initialAssets.food = {
-        units: rand(50, 100)
-      };
-      
-      initialAssets.job = {
-        salary: rand(25000, 50000)
-      };
-
-      initialAssets.home = {
-        squareFeet: rand(1000, 3000)
-      };
-    },
-    seventyfifth: () => {
-      initialAssets.food = {
-        units: rand(75, 100)
-      };
-      
-      initialAssets.job = {
-        salary: rand(50000, 75000)
-      };
-
-      initialAssets.home = {
-        squareFeet: rand(2000, 4000)
-      };
-    },
-    ninety: () => {
-      initialAssets.food = {
-        units: rand(100, 250)
-      };
-      
-      initialAssets.job = {
-        salary: rand(50000, 100000)
-      };
-
-      initialAssets.home = {
-        squareFeet: rand(4000, 6000)
-      };
-    },
-    veryRare: () => {
-      initialAssets.food = {
-        units: rand(300, 700)
-      };
-      
-      initialAssets.job = {
-        salary: rand(100000, 10000000)
-      };
-
-      initialAssets.home = {
-        squareFeet: rand(10000, 25000)
-      };
-    }
-  })
-
-  people[i] = {
     general: {
       name: faker.name.findName(),
       profileImage: faker.image.avatar()
@@ -155,29 +102,116 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
         type: 'job'
       }
     ],
-    assets: initialAssets,
+    assets: {
+      job: {
+        companySector: null,
+        companyId: null,
+        salary: 0
+      },
+      stock: []
+    },
     logNormalSeedVal: logNormalVal
   };
+
+  buildPercentiles({
+    logNormalVal,
+    ten: () => {
+      people[personId].assets = {
+        ...people[personId].assets,
+        food: { units: rand(1, 25) }
+      };
+    },
+    twentyfifth: () => {
+      people[personId].assets = {
+        ...people[personId].assets,
+        food: { units: rand(10, 50) }
+      };
+    },
+    fifty: () => {
+      people[personId].assets = {
+        ...people[personId].assets,
+        food: { units: rand(50, 100) },
+        home: { squareFeet: rand(1000, 3000) }
+      };
+    },
+    seventyfifth: () => {
+      people[personId].assets = {
+        ...people[personId].assets,
+        food: { units: rand(75, 100) },
+        home: { squareFeet: rand(2000, 4000) }
+      };
+
+      const companyIndex = rand(0, initialCompanyIds.length - 1);
+      buyShares(personId, initialCompanyIds[companyIndex], rand(10, 100));
+    },
+    ninety: () => {
+      people[personId].assets = {
+        ...people[personId].assets,
+        food: { units: rand(100, 250) },
+        home: { squareFeet: rand(4000, 6000) }
+      };
+
+      const companyIndex = rand(0, initialCompanyIds.length - 1);
+      buyShares(personId, initialCompanyIds[companyIndex], rand(1000, 10000));
+    },
+    veryRare: () => {
+      people[personId].assets = {
+        ...people[personId].assets,
+        food: { units: rand(300, 700) },
+        home: { squareFeet: rand(6000, 10000) }
+      };
+
+      const companyIndex = rand(0, initialCompanyIds.length - 1);
+      buyShares(personId, initialCompanyIds[companyIndex], rand(10000, 1000000));
+    }
+  })
 }
 
 // Sim loop
 for (let i = 0; i < DAYS_OF_EXECUTION; i++) {
-  for (let j = 0; j < people.length; j++) {
-    const numFoodUnitsToConsume = rand(2, 5);
-    people[j].wealth += people[j].assets.job.salary / 365;
-    // people[j].assets.food.units -= rand(2, 5);
-    if (people[j].assets.food.units <= numFoodUnitsToConsume) {
-      people[j].wealth -= rand(20, 50);
-      people[j].assets.food.units += rand(10, 20);
-    }
+  // Other upkeep
+  for (let personId in people) {
+    // Person upkeep
+    upkeep(personId);
   }
 }
 
-logPeople(people);
+logObj(companies);
 
 // Utils
-function logPeople(people) {
-  console.log(inspect(people, false, null));
+function upkeep(personId) {
+  /*
+    possibly add to coporation formation list
+      - capital requirements
+      - skill requirments
+    check status
+      - employed / unemployed
+      - deceased / living
+    income
+      - salary
+    purchase needs
+      - food
+      - utils
+      - loans
+      - mortgage
+      - find job if need be
+    invest if applicable
+      - stocks
+      - bank
+    purchase misc
+      - purchase items to fill MPC requirement
+  */
+
+  const numFoodUnitsToConsume = rand(2, 5);
+  people[personId].wealth += people[personId].assets.job.salary / 365;
+  if (people[personId].assets.food.units <= numFoodUnitsToConsume) {
+    people[personId].wealth -= rand(20, 50);
+    people[personId].assets.food.units += rand(10, 20);
+  }
+}
+
+function logObj(obj) {
+  console.log(inspect(obj, false, null));
 }
 
 const nullFunc = () => null;
@@ -237,4 +271,44 @@ function costOfMaterials() {
 
 function decesion() {
   // needs, MPC -> misc vs investing vs needs, 
+}
+
+function genId() {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+function buyShares(personId, companyId, numShares) {
+  const sharePrice = companies[companyId].sharePrice;
+
+  if (people[personId].wealth >= (numShares * sharePrice) && (companies[companyId].totalShares - companies[companyId].sharesOwned) >= numShares) {
+    people[personId].wealth -= numShares * sharePrice;
+    companies[companyId].sharesOwned += numShares;
+    companies[companyId].marketCap += numShares * sharePrice;
+
+    companies[companyId].shareholders.push({
+      id: personId,
+      shares: numShares
+    });
+
+    companies[companyId].sharePrice = companies[companyId].marketCap / companies[companyId].totalShares;
+
+    people[personId].assets.stock.push({
+      id: companyId,
+      shares: numShares
+    });
+
+    return true;
+  }
+
+  return false;
+
+  // get current share price
+  // subtract numShares * sharePrice from person liquidity
+  // increment company shares owned
+  // increase share price by factor of shares purchased
+  // increase marketCap and liquidity to compensate
+}
+
+function sellShares(personId, companyId, numShares) {
+
 }
