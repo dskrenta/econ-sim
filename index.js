@@ -21,14 +21,19 @@ const fed = {
 };
 
 const government = {
-  incomeTax: 0.2,
-  corporateTax: 0.2,
+  incomeTax: 0.2, // check
+  corporateTax: 0.2, // check
   budget: 10000,
   exportTax: 0.01,
-  importTax: 0.01
+  importTax: 0.01,
+  wealth: 0 // check
 };
 
 const companies = {
+  [genId()]: {
+    name: 'Mass Housing Co',
+    type: 'home'
+  },
   [genId()]: {
     name: 'Consume Co',
     type: 'food'
@@ -52,6 +57,8 @@ const companies = {
 };
 
 const people = {};
+
+const orders = [];
 
 // Init companies
 for (let id in companies) {
@@ -104,11 +111,13 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
     ],
     assets: {
       job: {
+        companyId: null,
         salary: 0
       },
       stock: {}
     },
-    logNormalSeedVal: logNormalVal
+    logNormalSeedVal: logNormalVal,
+    personLog: [] // Do at end
   };
 
   buildPercentiles({
@@ -128,6 +137,8 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
           salary: rand(5000, 10000)
         }
       };
+
+      companies[randCompanyId].employees.push(personId);
     },
     fifty: () => {
       people[personId].assets = {
@@ -139,6 +150,8 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
           salary: rand(10000, 25000)
         }
       };
+
+      companies[randCompanyId].employees.push(personId);
     },
     seventyfifth: () => {
       people[personId].assets = {
@@ -150,6 +163,8 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
           salary: rand(25000, 75000)
         }
       };
+
+      companies[randCompanyId].employees.push(personId);
 
       const companyIndex = rand(0, initialCompanyIds.length - 1);
       buyShares(personId, initialCompanyIds[companyIndex], rand(10, 100));
@@ -165,6 +180,8 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
         }
       };
 
+      companies[randCompanyId].employees.push(personId);
+
       const companyIndex = rand(0, initialCompanyIds.length - 1);
       buyShares(personId, initialCompanyIds[companyIndex], rand(1000, 10000));
     },
@@ -179,6 +196,8 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
         }
       };
 
+      companies[randCompanyId].employees.push(personId);
+
       const companyIndex = rand(0, initialCompanyIds.length - 1);
       buyShares(personId, initialCompanyIds[companyIndex], rand(10000, 1000000));
     }
@@ -190,15 +209,68 @@ for (let i = 0; i < DAYS_OF_EXECUTION; i++) {
   // Other upkeep
   for (let personId in people) {
     // Person upkeep
-    upkeep(personId);
+    personUpkeep(personId, i);
   }
 }
 
-logObj(people);
-logObj(companies);
+// logObj(people);
+// logObj(companies);
+console.log(orders);
 
 // Utils
-function upkeep(personId) {
+function personUpkeep(personId, timeIndex) {
+  if (people[personId].status.alive === true) {
+    const numFoodUnitsToConsume = rand(5, 15);
+    const employerId = people[personId].assets.job.companyId;
+    const income = people[personId].assets.job.salary / 365;
+    const incomeAfterTax = income * government.incomeTax;
+    government.wealth += income - incomeAfterTax;
+    if (employerId) companies[employerId].marketCap -= income;
+    const targetSpend = incomeAfterTax * MARGINAL_PROPENSITY_TO_COMSUME;
+    let totalSpend = 0;
+
+    // Income
+    people[personId].wealth += incomeAfterTax;
+
+    // Buy food units if needed
+    if (people[personId].assets.food.units <= numFoodUnitsToConsume) {
+      const foodUnitsToBuy = (numFoodUnitsToConsume - people[personId].assets.food.units) + rand(1, 25);
+
+      const purchaseResult = purchaseProduct({
+        personId,
+        productName: 'Food Unit',
+        materialsRarityFactor: 5,
+        laborRarityFactor: 1,
+        desiredProfit: 0.20,
+        timeIndex,
+        units: foodUnitsToBuy,
+        companyId: null // fix
+      });
+
+      if (purchaseResult.result) {
+        people[personId].assets.food.units += foodUnitsToBuy
+        totalSpend += purchaseProduct.cost;
+      };
+    }
+
+    // Food unit consumption
+    if (people[personId].assets.food.units >= numFoodUnitsToConsume) {
+      people[personId].assets.food.units -= numFoodUnitsToConsume;
+    }
+    else {
+      people[personId].status.hungerFactor += 1;
+    }
+
+    // Shelter/home, utilities check
+
+    // Employment check
+
+    // Additional spending, investment
+
+    // Person health check (home, hungerFactor, utilities)
+    // possibly die
+  }
+
   /*
     possibly add to coporation formation list
       - capital requirements
@@ -220,13 +292,6 @@ function upkeep(personId) {
     purchase misc
       - purchase items to fill MPC requirement
   */
-
-  const numFoodUnitsToConsume = rand(2, 5);
-  people[personId].wealth += people[personId].assets.job.salary / 365;
-  if (people[personId].assets.food.units <= numFoodUnitsToConsume) {
-    people[personId].wealth -= rand(20, 50);
-    people[personId].assets.food.units += rand(10, 20);
-  }
 }
 
 function logObj(obj) {
@@ -276,20 +341,47 @@ function buildPercentiles({
   }
 }
 
-function productCost() {
-  // costOfLabor, costOfMaterials, overhead expenses, desired profit as percentage, efficiency
+function purchaseProduct({
+  personId,
+  productName,
+  laborRarityFactor,
+  materialsRarityFactor,
+  desiredProfit = 0.20,
+  timeIndex = 0,
+  units = 1,
+  companyId
+}) {
+  const cost = productCost(laborRarityFactor, materialsRarityFactor, desiredProfit, units);
+
+  if (people[personId].wealth >= cost) {
+    people[personId].wealth -= cost;
+
+    orders.push({
+      type: 'consumerSpending',
+      timeIndex,
+      personId,
+      productName,
+      cost,
+      units,
+      companyId
+    });
+
+    return {
+      result: true,
+      cost
+    };
+  }
+  return {
+    result: false
+  };
 }
 
-function costOfLabor(difficulty) {
-  // difficulty, size of labor pool, cost of training, taxes, employee benefits
-}
-
-function costOfMaterials() {
-  // complexity, rarity
-}
-
-function decision() {
-  // needs, MPC -> misc vs investing vs needs,
+// fix
+function productCost(laborRarityFactor, materialsRarityFactor, desiredProfit = 0.20, units = 1) {
+  const baseCost = 1 * laborRarityFactor * materialsRarityFactor;
+  const tax = baseCost * government.corporateTax;
+  const desiredProfitAddition = (baseCost + tax) * desiredProfit;
+  return (baseCost + tax + desiredProfitAddition) * units;
 }
 
 function genId() {
@@ -322,6 +414,15 @@ function buyShares(personId, companyId, numShares, timeIndex = 0) {
         timeIndex
       };
     }
+
+    orders.push({
+      type: 'investorSpending',
+      timeIndex,
+      personId,
+      productName: `Bought ${numShares} shares of ${companies[companyId].name}`,
+      cost: numShares * sharePrice,
+      units: numShares
+    });
 
     return true;
   }
