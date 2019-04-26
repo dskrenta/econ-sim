@@ -6,7 +6,7 @@ const faker = require('faker');
 const crypto = require('crypto');
 
 // Constants
-const INITIAL_POPULATION_SIZE = 100; 
+const INITIAL_POPULATION_SIZE = 100;
 const DEFAULT_WEALTH_FACTOR = 25000;
 const DAYS_OF_EXECUTION = 365;
 const MARGINAL_PROPENSITY_TO_COMSUME = 0.6;
@@ -74,8 +74,8 @@ const initialCompanyIds = Object.keys(companies);
 
 for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
   const logNormalVal = logNormal();
-
   const personId = genId();
+  const randCompanyId = Object.keys(companies)[rand(0, Object.keys(companies).length - 1)];
 
   people[personId] = {
     status: {
@@ -104,11 +104,9 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
     ],
     assets: {
       job: {
-        companySector: null,
-        companyId: null,
         salary: 0
       },
-      stock: []
+      stock: {}
     },
     logNormalSeedVal: logNormalVal
   };
@@ -124,21 +122,33 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
     twentyfifth: () => {
       people[personId].assets = {
         ...people[personId].assets,
-        food: { units: rand(10, 50) }
+        food: { units: rand(10, 50) },
+        job: {
+          companyId: randCompanyId,
+          salary: rand(5000, 10000)
+        }
       };
     },
     fifty: () => {
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(50, 100) },
-        home: { squareFeet: rand(1000, 3000) }
+        home: { squareFeet: rand(1000, 3000) },
+        job: {
+          companyId: randCompanyId,
+          salary: rand(10000, 25000)
+        }
       };
     },
     seventyfifth: () => {
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(75, 100) },
-        home: { squareFeet: rand(2000, 4000) }
+        home: { squareFeet: rand(2000, 4000) },
+        job: {
+          companyId: randCompanyId,
+          salary: rand(25000, 75000)
+        }
       };
 
       const companyIndex = rand(0, initialCompanyIds.length - 1);
@@ -148,7 +158,11 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(100, 250) },
-        home: { squareFeet: rand(4000, 6000) }
+        home: { squareFeet: rand(4000, 6000) },
+        job: {
+          companyId: randCompanyId,
+          salary: rand(75000, 150000)
+        }
       };
 
       const companyIndex = rand(0, initialCompanyIds.length - 1);
@@ -158,7 +172,11 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(300, 700) },
-        home: { squareFeet: rand(6000, 10000) }
+        home: { squareFeet: rand(6000, 10000) },
+        job: {
+          companyId: randCompanyId,
+          salary: rand(200000, 1000000)
+        }
       };
 
       const companyIndex = rand(0, initialCompanyIds.length - 1);
@@ -176,6 +194,7 @@ for (let i = 0; i < DAYS_OF_EXECUTION; i++) {
   }
 }
 
+logObj(people);
 logObj(companies);
 
 // Utils
@@ -270,32 +289,39 @@ function costOfMaterials() {
 }
 
 function decision() {
-  // needs, MPC -> misc vs investing vs needs, 
+  // needs, MPC -> misc vs investing vs needs,
 }
 
 function genId() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-function buyShares(personId, companyId, numShares) {
+function buyShares(personId, companyId, numShares, timeIndex = 0) {
   const sharePrice = companies[companyId].sharePrice;
 
   if (people[personId].wealth >= (numShares * sharePrice) && (companies[companyId].totalShares - companies[companyId].sharesOwned) >= numShares) {
     people[personId].wealth -= numShares * sharePrice;
     companies[companyId].sharesOwned += numShares;
     companies[companyId].marketCap += numShares * sharePrice;
-
-    companies[companyId].shareholders.push({
-      id: personId,
-      shares: numShares
-    });
-
     companies[companyId].sharePrice = companies[companyId].marketCap / companies[companyId].totalShares;
 
-    people[personId].assets.stock.push({
-      id: companyId,
-      shares: numShares
-    });
+    if (companyId in people[personId].assets.stock) {
+      companies[companyId].shareholders[personId].shares += numShares;
+      people[personId].assets.stock[companyId].shares += numShares;
+    }
+    else {
+      companies[companyId].shareholders[personId] = {
+        shares: numShares,
+        sharePrice,
+        timeIndex
+      };
+
+      people[personId].assets.stock[companyId] = {
+        shares: numShares,
+        sharePrice,
+        timeIndex
+      };
+    }
 
     return true;
   }
@@ -309,6 +335,24 @@ function buyShares(personId, companyId, numShares) {
   // increase marketCap and liquidity to compensate
 }
 
-function sellShares(personId, companyId, numShares) {
+function sellShares(personId, companyId, numShares, timeIndex = 0) {
+  const sharePrice = companies[companyId].sharePrice;
 
+  if (companyId in people[personId].assets.stock && people[personId].assets.stock[companyId].shares <= numShares) {
+    people[personId].wealth += numShares * sharePrice;
+    companies[companyId].shareholders[personId].shares -= numShares;
+    people[personId].assets.stock[companyId].shares -= numShares;
+    companies[companyId].marketCap -= numShares * sharePrice;
+    companies[companyId].sharePrice = companies[companyId].marketCap / companies[companyId].totalShares;
+
+    return true;
+  }
+
+  return false;
+
+  // get current share price
+  // modify person wealth by numShares * sharePrice
+  // decrement company shares owned
+  // decrease share price by factor of shares sold
+  // decrement marketCap to compensate
 }
