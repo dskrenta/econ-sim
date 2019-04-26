@@ -32,7 +32,7 @@ const government = {
 const companies = {
   [genId()]: {
     name: 'Mass Housing Co',
-    type: 'home'
+    type: 'tempHome'
   },
   [genId()]: {
     name: 'Consume Co',
@@ -51,7 +51,7 @@ const companies = {
     type: 'util'
   },
   [genId()]: {
-    name: 'Induldge Services',
+    name: 'Expensive Services',
     type: 'misc'
   }
 };
@@ -95,20 +95,6 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
       profileImage: faker.image.avatar()
     },
     wealth: logNormalVal * DEFAULT_WEALTH_FACTOR,
-    needs: [
-      {
-        type: 'home'
-      },
-      {
-        type: 'util'
-      },
-      {
-        type: 'food'
-      },
-      {
-        type: 'job'
-      }
-    ],
     assets: {
       job: {
         companyId: null,
@@ -236,6 +222,8 @@ function personUpkeep(personId, timeIndex) {
     if (people[personId].assets.food.units <= numFoodUnitsToConsume) {
       const foodUnitsToBuy = (numFoodUnitsToConsume - people[personId].assets.food.units) + rand(1, 25);
 
+      const foodCompanyId = getCompanyBySector('food');
+
       const purchaseResult = purchaseProduct({
         personId,
         productName: 'Food Unit',
@@ -244,7 +232,7 @@ function personUpkeep(personId, timeIndex) {
         desiredProfit: 0.20,
         timeIndex,
         units: foodUnitsToBuy,
-        companyId: null // fix
+        companyId: foodCompanyId
       });
 
       if (purchaseResult.result) {
@@ -291,6 +279,21 @@ function personUpkeep(personId, timeIndex) {
       - bank
     purchase misc
       - purchase items to fill MPC requirement
+
+       needs: [
+      {
+        type: 'home'
+      },
+      {
+        type: 'util'
+      },
+      {
+        type: 'food'
+      },
+      {
+        type: 'job'
+      }
+    ],
   */
 }
 
@@ -341,6 +344,11 @@ function buildPercentiles({
   }
 }
 
+function getCompanyBySector(sector) {
+  const companiesInSector = Object.entries(companies).filter(item => item[1].type === sector)[0][0];
+  return companiesInSector;
+}
+
 function purchaseProduct({
   personId,
   productName,
@@ -355,6 +363,7 @@ function purchaseProduct({
 
   if (people[personId].wealth >= cost) {
     people[personId].wealth -= cost;
+    companies[companyId].marketCap += cost;
 
     orders.push({
       type: 'consumerSpending',
