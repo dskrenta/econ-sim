@@ -198,7 +198,7 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
         food: { units: rand(300, 700) },
         home: {
           squareFeet,
-          price: DEFAULT_PRICE_PER_SQUARE_FOOT
+          price: DEFAULT_PRICE_PER_SQUARE_FOOT * squareFeet
         },
         job: {
           companyId: randCompanyId,
@@ -291,13 +291,13 @@ function personUpkeep(personId, timeIndex) {
             timeIndex,
             personId,
             productName: 'Temporary Housing',
-            cost: rent,
-            units,
-            companyId
+            cost: homeInfo.rent,
+            units: 1,
+            companyId: homeInfo.companyId
           });
         }
         else {
-          people[personId].homeInfo = null;
+          people[personId].assets.home = null;
         }
       }
       // Pay mortgage
@@ -313,10 +313,27 @@ function personUpkeep(personId, timeIndex) {
     else {
       // no home, buy, rent, or buy with mortgage
 
+      const tempHousingCompanyId = getCompanyBySector('tempHome');
+
       buildPercentiles({
+        logNormalVal: people[personId].logNormalSeedVal,
         ten: () => {
+          purchaseTempHousing({
+            personId,
+            companyId: tempHousingCompanyId,
+            minSquareFeet: 300,
+            maxSquareFeet: 1000,
+            timeIndex
+          });
         },
         twentyfifth: () => {
+          purchaseTempHousing({
+            personId,
+            companyId: tempHousingCompanyId,
+            minSquareFeet: 300,
+            maxSquareFeet: 1000,
+            timeIndex
+          });
         },
         fifty: () => {
         },
@@ -482,7 +499,7 @@ function purchaseTempHousing({
 }) {
   const squareFeet = rand(minSquareFeet, maxSquareFeet);
   const basePrice = squareFeet * DEFAULT_PRICE_PER_SQUARE_FOOT;
-  const tax = government.corporateTax * price;
+  const tax = government.corporateTax * basePrice;
   const price = basePrice + tax;
   const rent = price / 365;
 
