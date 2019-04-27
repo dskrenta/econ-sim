@@ -12,6 +12,7 @@ const DAYS_OF_EXECUTION = 365;
 const MARGINAL_PROPENSITY_TO_COMSUME = 0.6;
 const DEFAULT_NUM_SHARES = 1000000;
 const DEFAULT_PRICE_PER_SQUARE_FOOT = 123;
+const HUNGER_FACTOR_DEATH = 30;
 
 const logNormal = Prob.lognormal(0, 1);
 
@@ -222,14 +223,14 @@ for (let i = 0; i < DAYS_OF_EXECUTION; i++) {
   }
 }
 
-// logObj(people);
+logObj(people);
 // logObj(companies);
 // console.log(orders);
 
 // Utils
 function personUpkeep(personId, timeIndex) {
   if (people[personId].status.alive === true) {
-    const numFoodUnitsToConsume = rand(5, 15);
+    const numFoodUnitsToConsume = rand(5, 10);
     const employerId = people[personId].assets.job.companyId;
     const income = people[personId].assets.job.salary / 365;
     const incomeAfterTax = income * government.incomeTax;
@@ -243,14 +244,14 @@ function personUpkeep(personId, timeIndex) {
 
     // Buy food units if needed
     if (people[personId].assets.food.units <= numFoodUnitsToConsume) {
-      const foodUnitsToBuy = (numFoodUnitsToConsume - people[personId].assets.food.units) + rand(1, 25);
+      const foodUnitsToBuy = (numFoodUnitsToConsume - people[personId].assets.food.units) + rand(1, 5);
 
       const foodCompanyId = getCompanyBySector('food');
 
       const purchaseResult = purchaseProduct({
         personId,
         productName: 'Food Unit',
-        materialsRarityFactor: 5,
+        materialsRarityFactor: 2,
         laborRarityFactor: 1,
         desiredProfit: 0.20,
         timeIndex,
@@ -302,6 +303,7 @@ function personUpkeep(personId, timeIndex) {
       // Pay mortgage
       else if (people[personId].assets.home.mortgage) {
         // pay mortgage
+        // const rentAfterInterest = homeInfo.rent + (bankInterestRate * homeInfo.rent);
       }
       else {
         // owns home
@@ -330,11 +332,9 @@ function personUpkeep(personId, timeIndex) {
     // Employment check
     if (people[personId].assets.job.companyId) {
       // rand lose job
-      console.log('has job');
     }
     else {
       // get job
-      console.log('no job');
     }
 
     // Additional spending, investment
@@ -344,7 +344,7 @@ function personUpkeep(personId, timeIndex) {
 
     // Person health check (home, hungerFactor, utilities)
     // possibly die
-    if (people[personId].status.hungerFactor >= 10) {
+    if (people[personId].status.hungerFactor >= HUNGER_FACTOR_DEATH) {
       people[personId].status.alive = false;
     }
   }
@@ -439,7 +439,9 @@ function purchaseHome({
         squareFeet,
         mortgage: loanAmount,
         daysLeft: daysToPay,
-        loanType
+        loanType,
+        companyId,
+        bankCompanyId
       };
 
       return true;
@@ -453,7 +455,8 @@ function purchaseHome({
 
     people[personId].assets.home = {
       squareFeet,
-      price
+      price,
+      companyId
     };
 
     orders.push({
