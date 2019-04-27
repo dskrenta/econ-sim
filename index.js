@@ -11,6 +11,7 @@ const DEFAULT_WEALTH_FACTOR = 25000;
 const DAYS_OF_EXECUTION = 365;
 const MARGINAL_PROPENSITY_TO_COMSUME = 0.6;
 const DEFAULT_NUM_SHARES = 1000000;
+const DEFAULT_PRICE_PER_SQUARE_FOOT = 123;
 
 const logNormal = Prob.lognormal(0, 1);
 
@@ -28,6 +29,8 @@ const government = {
   importTax: 0.01,
   wealth: 0 // check
 };
+
+const bankInterestRate = fed.interestRate + (fed.interestRate * 0.20);
 
 const companies = {
   [genId()]: {
@@ -127,10 +130,15 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
       companies[randCompanyId].employees.push(personId);
     },
     fifty: () => {
+      const squareFeet = rand(1000, 3000);
+
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(50, 100) },
-        home: { squareFeet: rand(1000, 3000) },
+        home: {
+          squareFeet,
+          price: squareFeet * DEFAULT_PRICE_PER_SQUARE_FOOT
+        },
         job: {
           companyId: randCompanyId,
           salary: rand(10000, 25000)
@@ -140,10 +148,15 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
       companies[randCompanyId].employees.push(personId);
     },
     seventyfifth: () => {
+      const squareFeet = rand(2000, 4000);
+
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(75, 100) },
-        home: { squareFeet: rand(2000, 4000) },
+        home: {
+          squareFeet,
+          price: squareFeet * DEFAULT_PRICE_PER_SQUARE_FOOT
+        },
         job: {
           companyId: randCompanyId,
           salary: rand(25000, 75000)
@@ -156,10 +169,15 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
       buyShares(personId, initialCompanyIds[companyIndex], rand(10, 100));
     },
     ninety: () => {
+      const squareFeet = rand(4000, 6000);
+
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(100, 250) },
-        home: { squareFeet: rand(4000, 6000) },
+        home: {
+          squareFeet,
+          price: squareFeet * DEFAULT_PRICE_PER_SQUARE_FOOT
+        },
         job: {
           companyId: randCompanyId,
           salary: rand(75000, 150000)
@@ -172,10 +190,15 @@ for (let i = 0; i < INITIAL_POPULATION_SIZE; i++) {
       buyShares(personId, initialCompanyIds[companyIndex], rand(1000, 10000));
     },
     veryRare: () => {
+      const squareFeet = rand(6000, 10000);
+
       people[personId].assets = {
         ...people[personId].assets,
         food: { units: rand(300, 700) },
-        home: { squareFeet: rand(6000, 10000) },
+        home: {
+          squareFeet,
+          price: DEFAULT_PRICE_PER_SQUARE_FOOT
+        },
         job: {
           companyId: randCompanyId,
           salary: rand(200000, 1000000)
@@ -201,7 +224,7 @@ for (let i = 0; i < DAYS_OF_EXECUTION; i++) {
 
 // logObj(people);
 // logObj(companies);
-console.log(orders);
+// console.log(orders);
 
 // Utils
 function personUpkeep(personId, timeIndex) {
@@ -244,57 +267,87 @@ function personUpkeep(personId, timeIndex) {
     // Food unit consumption
     if (people[personId].assets.food.units >= numFoodUnitsToConsume) {
       people[personId].assets.food.units -= numFoodUnitsToConsume;
+
+      if (people[personId].status.hungerFactor > 0) {
+        people[personId].status.hungerFactor -= 1;
+      }
     }
     else {
       people[personId].status.hungerFactor += 1;
     }
 
     // Shelter/home, utilities check
+    if (people[personId].assets.home) {
+      // Pay rent if purchased temporary housing
+      if (people[personId].assets.home.rent) {
+        const homeInfo = people[personId].assets.home;
+        if (people[personId].wealth >= homeInfo.rent) {
+          people[personId].wealth -= homeInfo.rent;
+          companies[homeInfo.companyId].marketCap += homeInfo.rent;
+
+          orders.push({
+            type: 'consumerSpending',
+            timeIndex,
+            personId,
+            productName: 'Temporary Housing',
+            cost: rent,
+            units,
+            companyId
+          });
+        }
+        else {
+          people[personId].homeInfo = null;
+        }
+      }
+      // Pay mortgage
+      else if (people[personId].assets.home.mortgage) {
+        // pay mortgage
+      }
+      else {
+        // owns home
+        // rand sell home
+      }
+    }
+    else {
+      // no home, buy, rent, or buy with mortgage
+
+      buildPercentiles({
+        ten: () => {
+        },
+        twentyfifth: () => {
+        },
+        fifty: () => {
+        },
+        seventyfifth: () => {
+        },
+        ninety: () => {
+        },
+        veryRare: () => {
+        }
+      });
+    }
 
     // Employment check
+    if (people[personId].assets.job.companyId) {
+      // rand lose job
+      console.log('has job');
+    }
+    else {
+      // get job
+      console.log('no job');
+    }
 
     // Additional spending, investment
+    if (totalSpend < targetSpend) {
+      // spend more
+    }
 
     // Person health check (home, hungerFactor, utilities)
     // possibly die
+    if (people[personId].status.hungerFactor >= 10) {
+      people[personId].status.alive = false;
+    }
   }
-
-  /*
-    possibly add to coporation formation list
-      - capital requirements
-      - skill requirments
-    check status
-      - employed / unemployed
-      - deceased / living
-    income
-      - salary
-    purchase needs
-      - food
-      - utils
-      - loans
-      - mortgage
-      - find job if need be
-    invest if applicable
-      - stocks
-      - bank
-    purchase misc
-      - purchase items to fill MPC requirement
-
-       needs: [
-      {
-        type: 'home'
-      },
-      {
-        type: 'util'
-      },
-      {
-        type: 'food'
-      },
-      {
-        type: 'job'
-      }
-    ],
-  */
 }
 
 function logObj(obj) {
@@ -349,6 +402,113 @@ function getCompanyBySector(sector) {
   return companiesInSector;
 }
 
+function loanQualification(personId, loanAmount, daysToPay = 365) {
+  if (people[personId].assets.job) {
+    if (people[personId].wealth + (people[personId].job.salary * daysToPay) >= loanAmount) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function purchaseHome({
+  personId,
+  companyId,
+  bankCompanyId,
+  loanType = 'fixed',
+  minSquareFeet,
+  maxSquareFeet,
+  timeIndex = 0
+}) {
+  const squareFeet = rand(minSquareFeet, maxSquareFeet);
+  const basePrice = squareFeet * DEFAULT_PRICE_PER_SQUARE_FOOT;
+  const tax = government.corporateTax * price;
+  const price = basePrice + tax;
+
+  if (people[personId].wealth < price) {
+    const daysToPay = 365;
+    const loanAmount = price / daysToPay;
+    const personQualifys = loanQualification(personId, price, daysToPay);
+
+    if (personQualifys) {
+      companies[bankCompanyId].marketCap -= price;
+      companies[companyId.marketCap] += price;
+      people[personId].wealth -= loanAmount + (loanAmount * bankInterestRate);
+
+      people[personId].assets.home = {
+        squareFeet,
+        mortgage: loanAmount,
+        daysLeft: daysToPay,
+        loanType
+      };
+
+      return true;
+    }
+
+    return false;
+  }
+  else {
+    people[personId].wealth -= price;
+    companies[companyId].marketCap += price;
+
+    people[personId].assets.home = {
+      squareFeet,
+      price
+    };
+
+    orders.push({
+      type: 'consumerSpending',
+      timeIndex,
+      personId,
+      productName: `Purchased ${squareFeet} square foot home outright`,
+      cost: price,
+      units: 1,
+      companyId
+    });
+
+    return true;
+  }
+}
+
+function purchaseTempHousing({
+  personId,
+  companyId,
+  minSquareFeet,
+  maxSquareFeet,
+  timeIndex = 0
+}) {
+  const squareFeet = rand(minSquareFeet, maxSquareFeet);
+  const basePrice = squareFeet * DEFAULT_PRICE_PER_SQUARE_FOOT;
+  const tax = government.corporateTax * price;
+  const price = basePrice + tax;
+  const rent = price / 365;
+
+  if (people[personId].wealth >= rent) {
+    people[personId].assets.home = {
+      squareFeet,
+      rent,
+      companyId
+    };
+
+    people[personId].wealth -= rent;
+    companies[companyId].marketCap += rent;
+
+    orders.push({
+      type: 'consumerSpending',
+      timeIndex,
+      personId,
+      productName: 'Temporary Housing Rent',
+      cost: rent,
+      units: 1,
+      companyId
+    });
+
+    return true;
+  }
+
+  return false;
+}
+
 function purchaseProduct({
   personId,
   productName,
@@ -362,8 +522,10 @@ function purchaseProduct({
   const cost = productCost(laborRarityFactor, materialsRarityFactor, desiredProfit, units);
 
   if (people[personId].wealth >= cost) {
+    const taxAmount = cost * government.corporateTax;
     people[personId].wealth -= cost;
-    companies[companyId].marketCap += cost;
+    companies[companyId].marketCap += cost - taxAmount;
+    government.wealth += taxAmount;
 
     orders.push({
       type: 'consumerSpending',
@@ -385,7 +547,6 @@ function purchaseProduct({
   };
 }
 
-// fix
 function productCost(laborRarityFactor, materialsRarityFactor, desiredProfit = 0.20, units = 1) {
   const baseCost = 1 * laborRarityFactor * materialsRarityFactor;
   const tax = baseCost * government.corporateTax;
@@ -437,12 +598,6 @@ function buyShares(personId, companyId, numShares, timeIndex = 0) {
   }
 
   return false;
-
-  // get current share price
-  // subtract numShares * sharePrice from person liquidity
-  // increment company shares owned
-  // increase share price by factor of shares purchased
-  // increase marketCap and liquidity to compensate
 }
 
 function sellShares(personId, companyId, numShares, timeIndex = 0) {
@@ -459,10 +614,4 @@ function sellShares(personId, companyId, numShares, timeIndex = 0) {
   }
 
   return false;
-
-  // get current share price
-  // modify person wealth by numShares * sharePrice
-  // decrement company shares owned
-  // decrease share price by factor of shares sold
-  // decrement marketCap to compensate
 }
