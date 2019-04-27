@@ -304,6 +304,7 @@ function personUpkeep(personId, timeIndex) {
       else if (people[personId].assets.home.mortgage) {
         // pay mortgage
         // const rentAfterInterest = homeInfo.rent + (bankInterestRate * homeInfo.rent);
+
       }
       else {
         // owns home
@@ -312,38 +313,29 @@ function personUpkeep(personId, timeIndex) {
     }
     else {
       // no home, buy, rent, or buy with mortgage
-
       const tempHousingCompanyId = getCompanyBySector('tempHome');
+      const bankCompanyId = getCompanyBySector('bank');
+      const realEstateCompanyId = getCompanyBySector('home');
 
-      buildPercentiles({
-        logNormalVal: people[personId].logNormalSeedVal,
-        ten: () => {
-          purchaseTempHousing({
-            personId,
-            companyId: tempHousingCompanyId,
-            minSquareFeet: 300,
-            maxSquareFeet: 1000,
-            timeIndex
-          });
-        },
-        twentyfifth: () => {
-          purchaseTempHousing({
-            personId,
-            companyId: tempHousingCompanyId,
-            minSquareFeet: 300,
-            maxSquareFeet: 1000,
-            timeIndex
-          });
-        },
-        fifty: () => {
-        },
-        seventyfifth: () => {
-        },
-        ninety: () => {
-        },
-        veryRare: () => {
-        }
+      const purchaseHomeResult = purchaseHome({
+        personId,
+        companyId: realEstateCompanyId,
+        bankCompanyId,
+        loanType: 'fixed',
+        minSquareFeet: 500,
+        maxSquareFeet: 2000,
+        timeIndex
       });
+
+      if (!purchaseHomeResult) {
+        purchaseTempHousing({
+          personId,
+          companyId: tempHousingCompanyId,
+          minSquareFeet: 300,
+          maxSquareFeet: 1000,
+          timeIndex
+        });
+      }
     }
 
     // Employment check
@@ -421,7 +413,7 @@ function getCompanyBySector(sector) {
 
 function loanQualification(personId, loanAmount, daysToPay = 365) {
   if (people[personId].assets.job) {
-    if (people[personId].wealth + (people[personId].job.salary * daysToPay) >= loanAmount) {
+    if (people[personId].wealth + (people[personId].assets.job.salary * daysToPay) >= loanAmount) {
       return true;
     }
   }
@@ -439,7 +431,7 @@ function purchaseHome({
 }) {
   const squareFeet = rand(minSquareFeet, maxSquareFeet);
   const basePrice = squareFeet * DEFAULT_PRICE_PER_SQUARE_FOOT;
-  const tax = government.corporateTax * price;
+  const tax = government.corporateTax * basePrice;
   const price = basePrice + tax;
 
   if (people[personId].wealth < price) {
