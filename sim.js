@@ -746,4 +746,42 @@
   runButton.addEventListener('click', e => {
     runSim();
   });
+
+  const inputForm = document.getElementById('input-form');
+  inputForm.addEventListener('keyup', e => {
+    const targetVar = e.target.dataset.param;
+    if (targetVar === 'initialPopulationSize') {
+      INITIAL_POPULATION_SIZE = e.target.value;
+    }
+    else if (targetVar === 'defaultWealthFactor') {
+      DEFAULT_WEALTH_FACTOR = e.target.value;
+    }
+    else if (targetVar === 'daysOfExecution') {
+      DAYS_OF_EXECUTION = e.target.value;
+    }
+    else if (targetVar === 'mpc') {
+      MARGINAL_PROPENSITY_TO_COMSUME = e.target.value;
+    }
+    else if (targetVar === 'defaultNumberOfShares') {
+      DEFAULT_NUM_SHARES = e.target.value;
+    }
+    else if (targetVar === 'defaultPricePerSquareFoot') {
+      DEFAULT_PRICE_PER_SQUARE_FOOT = e.target.value;
+    }
+    else if (targetVar === 'defaultHungerFactor') {
+      HUNGER_FACTOR_DEATH = e.target.value;
+    }
+    else if (targetVar === 'interestRate') {
+      fed.interestRate = e.target.value;
+    }
+    else if (targetVar === 'incomeTax') {
+      government.incomeTax = e.target.value;
+    }
+    else if (targetVar === 'corporateTax') {
+      government.corporateTax = e.target.value;
+    }
+    else if (targetVar === 'defaultGovernmentWealth') {
+      government.wealth = e.target.value;
+    }
+  })
 })();
