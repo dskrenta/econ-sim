@@ -219,11 +219,123 @@
     }
   }
 
-  console.log(people);
-  // logObj(companies);
-  // console.log(orders);
+  // Companies hack
+  delete companies[undefined];
+
+  // Call display functions
+  displayCompaniesTable();
+  displayPersonTable();
+  displayOrdersTable();
+  console.log(orders);
 
   // Utils
+  function displayCompaniesTable() {
+    const insertElement = document.getElementById('companies-table');
+    const html = `
+      <h1>Companies</h1>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Company Type</th>
+            <th scope="col">Market Cap</th>
+            <th scope="col">Share Price</th>
+            <th scope="col">Shares Owned</th>
+            <th scope="col">Total Shares</th>
+            <th scope="col">Shareholders</th>
+            <th scope="col">Employees</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.values(companies).map(company => ` 
+            <tr ${company.marketCap <= 0 && `class="table-danger"`}> 
+              <td>${company.name}</td>
+              <td>${company.type}</td>
+              <td>$${company.marketCap}</td>
+              <td>$${company.sharePrice}</td>
+              <td>${company.sharesOwned}</td>
+              <td>${company.totalShares}</td>
+              <td>${company.shareholders && Object.values(company.shareholders).length}</td>
+              <td>${company.employees && company.employees.length}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    insertElement.insertAdjacentHTML('afterbegin', html);
+  }
+
+  function displayPersonTable() {
+    const insertElement = document.getElementById('people-table');
+    const html = `
+      <h1>People</h1>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Avatar</th>
+            <th scope="col">Name</th>
+            <th scope="col">Alive</th>
+            <th scope="col">Wealth</th>
+            <th scope="col">Food Units</th>
+            <th scope="col">Hunger Factor</th>
+            <th scope="col">Home</th>
+            <th scope="col">Job Salary</th>
+            <th scope="col">Stock</th>
+            <th scope="col">logNormalSeedValue</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.values(people).map(person => `
+            <tr ${!person.status.alive && `class="table-danger"`}> 
+              <td><img src="${person.general.profileImage}"/></td>
+              <td>${person.general.name}</td>
+              <td>${person.status.alive}</td>
+              <td>$${person.wealth.toFixed(2)}</td>
+              <td>${person.assets.food.units}</td>
+              <td>${person.status.hungerFactor}</td>
+              <td>${person.assets.home ? `${person.assets.home.squareFeet} sq feet, ${person.assets.home.price ? `Price: $${person.assets.home.price}` : `Mortgage per day: ${person.assets.home.mortgage.toFixed(2)}`}` : 'false'}</td>
+              <td>$${person.assets.job ? person.assets.job.salary.toFixed(2) : 0}</td>
+              <td>${person.logNormalSeedVal}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    insertElement.insertAdjacentHTML('afterbegin', html);
+  }
+
+  function displayOrdersTable() {
+    const insertElement = document.getElementById('orders-table');
+    const html = `
+      <h1>Truncated Orders (500 of ${orders.length})</h1>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col">Time Index</th>
+            <th scope="col">Name</th>
+            <th scope="col">Product Name</th>
+            <th scope="col">Cost</th>
+            <th scope="col">Units</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.slice(0, 499).map(order => `
+            <tr> 
+              <td>${order.type}</td>
+              <td>${order.timeIndex}</td>
+              <td>${people[order.personId].general.name}</td>
+              <td>${order.productName}</td>
+              <td>${order.cost}</td>
+              <td>${order.units}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    insertElement.insertAdjacentHTML('afterbegin', html);
+  }
+
   function personUpkeep(personId, timeIndex) {
     if (people[personId].status.alive === true) {
       const numFoodUnitsToConsume = rand(5, 10);
