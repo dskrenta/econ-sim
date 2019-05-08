@@ -13,20 +13,62 @@
   <body>
     <div class="jumbotron">
       <h1 class="display-4">Econ Sim</h1>
-      <p class="lead">Enter your desired macroeconomic values and see the results by running the simulator.</p>
+      <p class="lead">Enter your desired macroeconomic values and see the results below by running the simulator.</p>
       <hr class="my-4">
       <form>
         <div class="form-group">
-          <label for="exampleInputEmail1">Email address</label>
-          <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
-          <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+          <label>Initial Population Size</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="100">
         </div>
         <div class="form-group">
-          <label for="exampleInputPassword1">Password</label>
-          <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+          <label>Default Wealth Factor</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="2500">
+          <small class="form-text text-muted">Determines the scale of wealth individuals start with</small>
+        </div>
+        <div class="form-group">
+          <label>Days of Execution</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="365">
+        </div>
+        <div class="form-group">
+          <label>Marginal Propensity To Consume</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="0.6">
+          <small class="form-text text-muted">Influence spending habbits (percentage as a decimal)</small>
+        </div>
+        <div class="form-group">
+          <label>Default Number Of Shares</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="1000000">
+          <small class="form-text text-muted">Amount of total shares companies should start with</small>
+        </div>
+        <div class="form-group">
+          <label>Default Price Per Square Foot</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="123">
+        </div>
+        <div class="form-group">
+          <label>Hunger Factor Death</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="30">
+          <small class="form-text text-muted">How many days individuals can go without eating before death</small>
+        </div>
+        <div class="form-group">
+          <label>Interest Rate</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="0.06">
+          <small class="form-text text-muted">(percentage as a decimal)</small>
+        </div>
+        <div class="form-group">
+          <label>Income Tax</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="0.2">
+          <small class="form-text text-muted">(percentage as a decimal)</small>
+        </div>
+        <div class="form-group">
+          <label>Corporate Tax</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="0.2">
+          <small class="form-text text-muted">(percentage as a decimal)</small>
+        </div>
+        <div class="form-group">
+          <label>Starting Government Wealth In Dollars</label>
+          <input type="number" class="form-control" id="initialPopulationSize" value="0">
         </div>
       </form>
-      <a class="btn btn-primary btn-lg" href="#" role="button">Run</a>
+      <a class="btn btn-primary btn-lg" id="run-button" role="button">Run</a>
     </div>
     <div id="results-stats"></div>
     <div id="companies-table"></div>

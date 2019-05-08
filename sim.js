@@ -1,14 +1,14 @@
 (() => {
   'use strict';
 
-  // Constants
-  const INITIAL_POPULATION_SIZE = 100;
-  const DEFAULT_WEALTH_FACTOR = 25000;
-  const DAYS_OF_EXECUTION = 365;
-  const MARGINAL_PROPENSITY_TO_COMSUME = 0.6;
-  const DEFAULT_NUM_SHARES = 1000000;
-  const DEFAULT_PRICE_PER_SQUARE_FOOT = 123;
-  const HUNGER_FACTOR_DEATH = 30;
+  // Defaults
+  let INITIAL_POPULATION_SIZE = 100;
+  let DEFAULT_WEALTH_FACTOR = 25000;
+  let DAYS_OF_EXECUTION = 365;
+  let MARGINAL_PROPENSITY_TO_COMSUME = 0.6;
+  let DEFAULT_NUM_SHARES = 1000000;
+  let DEFAULT_PRICE_PER_SQUARE_FOOT = 123;
+  let HUNGER_FACTOR_DEATH = 30;
 
   const logNormal = Prob.lognormal(0, 1);
 
@@ -210,23 +210,25 @@
     })
   }
 
-  // Sim loop
-  for (let i = 0; i < DAYS_OF_EXECUTION; i++) {
-    // Other upkeep
-    for (let personId in people) {
-      // Person upkeep
-      personUpkeep(personId, i);
+  // Run sim func
+  function runSim() {
+    // Sim loop
+    for (let i = 0; i < DAYS_OF_EXECUTION; i++) {
+      // Other upkeep
+      for (let personId in people) {
+        // Person upkeep
+        personUpkeep(personId, i);
+      }
     }
+
+    // Companies hack
+    delete companies[undefined];
+
+    // Call display functions
+    displayCompaniesTable();
+    displayPersonTable();
+    displayOrdersTable();
   }
-
-  // Companies hack
-  delete companies[undefined];
-
-  // Call display functions
-  displayCompaniesTable();
-  displayPersonTable();
-  displayOrdersTable();
-  console.log(orders);
 
   // Utils
   function displayCompaniesTable() {
@@ -467,12 +469,6 @@
     }
   }
 
-  /*
-  function logObj(obj) {
-    console.log(inspect(obj, false, null));
-  }
-  */
-
   const nullFunc = () => null;
 
   function rand(
@@ -679,7 +675,7 @@
   function genId() {
     let d = new Date().getTime();
     if (typeof performance !== 'undefined' && typeof performance.now === 'function'){
-      d += performance.now(); //use high-precision timer if available
+      d += performance.now(); // use high-precision timer if available
     }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       const r = (d + Math.random() * 16) % 16 | 0;
@@ -745,4 +741,9 @@
 
     return false;
   }
+
+  const runButton = document.getElementById('run-button');
+  runButton.addEventListener('click', e => {
+    runSim();
+  });
 })();
