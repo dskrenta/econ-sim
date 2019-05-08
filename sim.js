@@ -283,7 +283,7 @@
             <th scope="col">Hunger Factor</th>
             <th scope="col">Home</th>
             <th scope="col">Job Salary</th>
-            <th scope="col">Stock</th>
+            <th scope="col">Total Stock Value</th>
             <th scope="col">logNormalSeedValue</th>
           </tr>
         </thead>
@@ -298,6 +298,7 @@
               <td>${person.status.hungerFactor}</td>
               <td>${person.assets.home ? `${person.assets.home.squareFeet} sq feet, ${person.assets.home.price ? `Price: $${person.assets.home.price}` : `Mortgage per day: ${person.assets.home.mortgage.toFixed(2)}`}` : 'false'}</td>
               <td>$${person.assets.job ? person.assets.job.salary.toFixed(2) : 0}</td>
+              <td>$${getTotalStockValue(person).toFixed(2)}</td>
               <td>${person.logNormalSeedVal}</td>
             </tr>
           `).join('')}
@@ -371,6 +372,27 @@
       </table>
     `;
     insertElement.insertAdjacentHTML('afterbegin', html);
+  }
+
+  function getTotalStockValue(person) {
+    let totalStockValue = 0;
+
+    if (!isEmpty(person.assets.stock)) {
+      for (let stock of Object.values(person.assets.stock)) {
+        totalStockValue += stock.sharePrice * stock.shares;
+      }
+    }
+
+    return totalStockValue;
+  }
+
+  function isEmpty(obj) {
+    for (let key in obj) {
+      if(obj.hasOwnProperty(key)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   function personUpkeep(personId, timeIndex) {
