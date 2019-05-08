@@ -225,6 +225,7 @@
     delete companies[undefined];
 
     // Call display functions
+    displayStats();
     displayCompaniesTable();
     displayPersonTable();
     displayOrdersTable();
@@ -332,6 +333,40 @@
               <td>${order.units}</td>
             </tr>
           `).join('')}
+        </tbody>
+      </table>
+    `;
+    insertElement.insertAdjacentHTML('afterbegin', html);
+  }
+
+  function displayStats() {
+    const insertElement = document.getElementById('stats-table');
+
+    let totalSpending = 0;
+    for (let order of orders) {
+      totalSpending += order.cost;
+    }
+
+    const html = `
+      <h1>Stats</h1>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Total Spending</th>
+            <th scope="col">People Dead</th>
+            <th scope="col">People Alive</th>
+            <th scope="col">Num Solvent Companies</th>
+            <th scope="col">Num Companies</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr> 
+            <td>${totalSpending.toFixed(2)}</td>
+            <td>${Object.values(people).filter(person => person.status.alive === false).length}</td>
+            <td>${Object.values(people).filter(person => person.status.alive === true).length}</td>
+            <td>${Object.values(companies).filter(company => company.marketCap > 0).length}</td>
+            <td>${Object.values(companies).length}</td>
+          </tr>
         </tbody>
       </table>
     `;
@@ -783,5 +818,5 @@
     else if (targetVar === 'defaultGovernmentWealth') {
       government.wealth = e.target.value;
     }
-  })
+  });
 })();
